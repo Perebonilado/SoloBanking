@@ -1,4 +1,3 @@
-import { useConversationClientTool } from "@elevenlabs/react";
 import { settle } from "@/lib/apiRequest";
 import {
   optionalAccountNumber,
@@ -7,6 +6,7 @@ import {
   requireAccountNumber,
   requireText,
 } from "@/lib/toolParameters";
+import { useVoiceTool } from "@/lib/voice";
 import { accountsApi } from "@/services/accounts/accountsApi";
 import { banksApi } from "@/services/banks/banksApi";
 import { beneficiariesApi } from "@/services/beneficiaries/beneficiariesApi";
@@ -31,7 +31,7 @@ export function useBankingTools() {
   const dispatch = useAppDispatch();
   const guarded = useSessionGuard();
 
-  useConversationClientTool(
+  useVoiceTool(
     "get_balance",
     guarded(async () => {
       const balance = await settle(
@@ -41,7 +41,7 @@ export function useBankingTools() {
     }),
   );
 
-  useConversationClientTool(
+  useVoiceTool(
     "get_transactions",
     guarded(async (parameters) => {
       const page = optionalPositiveInteger(parameters.page, "page", 1);
@@ -61,7 +61,7 @@ export function useBankingTools() {
     }),
   );
 
-  useConversationClientTool(
+  useVoiceTool(
     "find_beneficiaries",
     guarded(async (parameters) => {
       const result = await settle(
@@ -81,13 +81,16 @@ export function useBankingTools() {
     }),
   );
 
-  useConversationClientTool(
+  useVoiceTool(
     "find_bank",
     guarded(async (parameters) => {
       const result = await settle(
         dispatch(
           banksApi.endpoints.findBanks.initiate(
-            requireText(parameters.search, "search"),
+            requireText(
+              parameters.search ?? parameters.bank_name ?? parameters.name,
+              "bank_name",
+            ),
           ),
         ),
       );
@@ -98,7 +101,7 @@ export function useBankingTools() {
     }),
   );
 
-  useConversationClientTool(
+  useVoiceTool(
     "verify_bank_account",
     guarded(async (parameters) => {
       const account = await settle(
@@ -116,7 +119,7 @@ export function useBankingTools() {
     }),
   );
 
-  useConversationClientTool(
+  useVoiceTool(
     "save_beneficiary",
     guarded(async (parameters) => {
       const saved = await settle(

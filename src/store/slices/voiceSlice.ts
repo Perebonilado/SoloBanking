@@ -1,4 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import type { Customer } from "@/types/customer";
 import type {
   ConnectionStatus,
   VerificationPrompt,
@@ -9,12 +10,16 @@ interface VoiceState {
   connection: ConnectionStatus;
   display: VoiceDisplay | null;
   verification: VerificationPrompt | null;
+  foundAccount: Customer | null;
+  signedInThisCall: boolean;
 }
 
 const initialState: VoiceState = {
   connection: "disconnected",
   display: null,
   verification: null,
+  foundAccount: null,
+  signedInThisCall: false,
 };
 
 const voiceSlice = createSlice({
@@ -36,6 +41,15 @@ const voiceSlice = createSlice({
     verificationEnded(state) {
       state.verification = null;
     },
+    accountFound(state, action: PayloadAction<Customer>) {
+      state.foundAccount = action.payload;
+    },
+    callSignedIn(state) {
+      state.signedInThisCall = true;
+    },
+    callSignedOut(state) {
+      state.signedInThisCall = false;
+    },
     voiceReset() {
       return initialState;
     },
@@ -43,6 +57,9 @@ const voiceSlice = createSlice({
 });
 
 export const {
+  accountFound,
+  callSignedIn,
+  callSignedOut,
   connectionChanged,
   displayShown,
   displayCleared,

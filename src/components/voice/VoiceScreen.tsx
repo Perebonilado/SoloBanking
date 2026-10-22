@@ -1,11 +1,8 @@
-import {
-  useConversationControls,
-  useConversationMode,
-} from "@elevenlabs/react";
 import type { MouseEvent } from "react";
 import { useMultiTap } from "@/hooks/useMultiTap";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { useVoiceTools } from "@/hooks/useVoiceTools";
+import { useVoiceControls, useVoiceMode } from "@/lib/voice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { receiptClosed } from "@/store/slices/receiptSlice";
 import {
@@ -41,8 +38,8 @@ export default function VoiceScreen() {
     screen,
   } = useAppSelector((state) => state.settings);
   const reduceMotion = usePrefersReducedMotion();
-  const { startSession, endSession } = useConversationControls();
-  const { mode } = useConversationMode();
+  const { startSession, endSession } = useVoiceControls();
+  const mode = useVoiceMode();
   const { confirmFingerprint, cancelFingerprint } = useVoiceTools();
 
   const inConversation = connection !== "disconnected";

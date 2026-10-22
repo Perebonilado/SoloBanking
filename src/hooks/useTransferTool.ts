@@ -1,4 +1,3 @@
-import { useConversationClientTool } from "@elevenlabs/react";
 import { settle } from "@/lib/apiRequest";
 import { encryptPayload } from "@/lib/encryptedPayload";
 import { formatNaira } from "@/lib/money";
@@ -9,6 +8,7 @@ import {
   requirePositiveInteger,
   requireText,
 } from "@/lib/toolParameters";
+import { useVoiceTool } from "@/lib/voice";
 import { authApi } from "@/services/auth/authApi";
 import { transfersApi } from "@/services/transfers/transfersApi";
 import { useAppDispatch, useAppStore } from "@/store/hooks";
@@ -21,7 +21,7 @@ export function useTransferTool(awaitFingerprint: AwaitFingerprint) {
   const store = useAppStore();
   const guarded = useSessionGuard();
 
-  useConversationClientTool(
+  useVoiceTool(
     "initiate_transfer",
     guarded(async (parameters) => {
       const transfer = await settle(

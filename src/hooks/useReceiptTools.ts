@@ -1,7 +1,7 @@
-import { useConversationClientTool } from "@elevenlabs/react";
 import { settle } from "@/lib/apiRequest";
 import { receiptFromTransaction } from "@/lib/receipt";
 import { optionalText } from "@/lib/toolParameters";
+import { useVoiceTool } from "@/lib/voice";
 import { accountsApi } from "@/services/accounts/accountsApi";
 import { useAppDispatch, useAppStore } from "@/store/hooks";
 import {
@@ -26,7 +26,7 @@ export function useReceiptTools() {
   const store = useAppStore();
   const guarded = useSessionGuard();
 
-  useConversationClientTool(
+  useVoiceTool(
     "show_receipt",
     guarded(async (parameters) => {
       const { receipt, customer } = store.getState();
@@ -55,7 +55,7 @@ export function useReceiptTools() {
     }),
   );
 
-  useConversationClientTool("close_receipt", async () => {
+  useVoiceTool("close_receipt", async () => {
     dispatch(receiptClosed());
     return JSON.stringify({ receipt_closed: true });
   });
