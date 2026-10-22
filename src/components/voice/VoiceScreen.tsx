@@ -7,9 +7,11 @@ import { useMultiTap } from "@/hooks/useMultiTap";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { useVoiceTools } from "@/hooks/useVoiceTools";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { signOut } from "@/store/signOut";
 import { receiptClosed } from "@/store/slices/receiptSlice";
-import { homeLayoutToggled } from "@/store/slices/settingsSlice";
+import {
+  homeLayoutToggled,
+  screenChanged,
+} from "@/store/slices/settingsSlice";
 import { connectionChanged, voiceReset } from "@/store/slices/voiceSlice";
 import type { ConnectionStatus, OrbState } from "@/types/voice";
 import CallView from "./CallView";
@@ -33,16 +35,19 @@ export default function VoiceScreen() {
   const receipt = useAppSelector((state) =>
     state.receipt.open ? state.receipt.last : null,
   );
-  const signedIn = useAppSelector((state) => state.session.accessToken !== null);
-  const { visionZone: zone, homeLayout } = useAppSelector(
-    (state) => state.settings,
-  );
+  const {
+    visionZone: zone,
+    homeLayout,
+    screen,
+  } = useAppSelector((state) => state.settings);
   const reduceMotion = usePrefersReducedMotion();
   const { startSession, endSession } = useConversationControls();
   const { mode } = useConversationMode();
   const { confirmFingerprint, cancelFingerprint } = useVoiceTools();
 
   const inConversation = connection !== "disconnected";
+  const showText = screen === "text";
+  const openText = () => dispatch(screenChanged("text"));
   const orb: OrbState =
     connection === "connecting"
       ? "think"
@@ -53,7 +58,6 @@ export default function VoiceScreen() {
   const handleDisconnect = () => {
     cancelFingerprint();
     dispatch(voiceReset());
-    void dispatch(signOut());
   };
 
   const registerTap = useMultiTap((taps) => {
@@ -64,6 +68,7 @@ export default function VoiceScreen() {
       }
       return;
     }
+    if (showText && !inConversation) return;
     if (connection === "disconnected" && taps >= 2) {
       dispatch(connectionChanged("connecting"));
       startSession({
@@ -106,10 +111,11 @@ export default function VoiceScreen() {
           reduceMotion={reduceMotion}
           inert={Boolean(verification)}
         />
-      ) : inConversation && signedIn ? (
+      ) : showText ? (
         <HomeView
           layout={homeLayout}
           onToggleLayout={() => dispatch(homeLayoutToggled())}
+          onSwitchToVoice={() => dispatch(screenChanged("voice"))}
           inert={Boolean(verification)}
         />
       ) : inConversation ? (
@@ -119,9 +125,10 @@ export default function VoiceScreen() {
           zone={zone}
           reduceMotion={reduceMotion}
           inert={Boolean(verification)}
+          onSwitchToText={openText}
         />
       ) : (
-        <HungUpView zone={zone} />
+        <HungUpView zone={zone} onSwitchToText={openText} />
       )}
       {inConversation && verification && (
         <VerificationSheet

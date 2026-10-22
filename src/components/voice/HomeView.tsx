@@ -1,9 +1,11 @@
 import classNames from "classnames";
+import { useEffect } from "react";
 import LineIcon, { type LineIconName } from "@/components/ui/LineIcon";
 import { groupAccountNumber } from "@/lib/accountNumber";
 import { formatBalance } from "@/lib/money";
 import { useGetBalanceQuery } from "@/services/accounts/accountsApi";
-import { useAppSelector } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { sessionEnded } from "@/store/slices/sessionSlice";
 import type { HomeLayout } from "@/types/voice";
 
 function ActionRow({ icon, label }: { icon: LineIconName; label: string }) {
@@ -21,16 +23,37 @@ function ActionRow({ icon, label }: { icon: LineIconName; label: string }) {
 interface HomeViewProps {
   layout: HomeLayout;
   onToggleLayout: () => void;
+  onSwitchToVoice: () => void;
   inert?: boolean;
 }
+
+const HEADER_BUTTON =
+  "flex size-11 flex-none items-center justify-center rounded-full bg-surface text-accent outline-offset-4 outline-accent focus-visible:outline-4";
 
 export default function HomeView({
   layout,
   onToggleLayout,
+  onSwitchToVoice,
   inert,
 }: HomeViewProps) {
+  const dispatch = useAppDispatch();
   const customer = useAppSelector((state) => state.customer.saved);
-  const { data: balance, isError } = useGetBalanceQuery();
+  const signedIn = useAppSelector((state) => state.session.accessToken !== null);
+  const {
+    data: balance,
+    error,
+    isFetching,
+  } = useGetBalanceQuery(undefined, {
+    skip: !signedIn,
+    refetchOnMountOrArgChange: true,
+  });
+  const sessionExpired =
+    typeof error === "object" && "status" in error && error.status === 401;
+
+  useEffect(() => {
+    if (sessionExpired) dispatch(sessionEnded());
+  }, [sessionExpired, dispatch]);
+
   const apart = layout === "apart";
   const firstName = customer?.name.trim().split(/\s+/)[0] ?? "";
   const accountNumber = balance?.accountNumber ?? customer?.accountNumber ?? "";
@@ -48,16 +71,26 @@ export default function HomeView({
           <h1 className="text-2xl">
             Hello, <span className="font-bold">{firstName}</span>
           </h1>
-          <button
-            type="button"
-            onClick={onToggleLayout}
-            aria-label={
-              apart ? "Bring everything to the middle" : "Spread everything out"
-            }
-            className="flex size-11 flex-none items-center justify-center rounded-full bg-surface text-accent outline-offset-4 outline-accent focus-visible:outline-4"
-          >
-            <LineIcon name={apart ? "contract" : "expand"} className="size-6" />
-          </button>
+          <div className="flex flex-none items-center gap-3">
+            <button
+              type="button"
+              onClick={onSwitchToVoice}
+              aria-label="Switch to voice"
+              className={HEADER_BUTTON}
+            >
+              <LineIcon name="mic" className="size-6" />
+            </button>
+            <button
+              type="button"
+              onClick={onToggleLayout}
+              aria-label={
+                apart ? "Bring everything to the middle" : "Spread everything out"
+              }
+              className={HEADER_BUTTON}
+            >
+              <LineIcon name={apart ? "contract" : "expand"} className="size-6" />
+            </button>
+          </div>
         </header>
         <section
           aria-label="Your account"
@@ -70,14 +103,14 @@ export default function HomeView({
             <LineIcon name="eye" className="size-[26px] flex-none" strokeWidth={2.25} />
           </div>
           <div
-            aria-busy={!balance && !isError}
+            aria-busy={isFetching}
             className="mt-1.5 text-[30px] leading-[1.15] font-extrabold tabular-nums wrap-anywhere"
           >
-            {balance
+            {signedIn && balance
               ? formatBalance(balance.balanceKobo)
-              : isError
-                ? "Unavailable"
-                : "₦…"}
+              : isFetching
+                ? "₦…"
+                : "₦—"}
           </div>
           <div className="mt-6 text-[15px] leading-tight font-medium">
             Account Number

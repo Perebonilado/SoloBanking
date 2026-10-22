@@ -8,6 +8,8 @@ export type ConnectionStatus = "disconnected" | "connecting" | "connected";
 
 export type HomeLayout = "apart" | "center";
 
+export type CallScreen = "voice" | "text";
+
 export interface VoiceDisplay {
   answer?: string;
   sub?: string;
