@@ -1,12 +1,14 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { VisionZone } from "@/types/voice";
+import type { HomeLayout, VisionZone } from "@/types/voice";
 
 interface SettingsState {
   visionZone: VisionZone;
+  homeLayout: HomeLayout;
 }
 
 const initialState: SettingsState = {
   visionZone: "center",
+  homeLayout: "apart",
 };
 
 const settingsSlice = createSlice({
@@ -16,8 +18,11 @@ const settingsSlice = createSlice({
     visionZoneChanged(state, action: PayloadAction<VisionZone>) {
       state.visionZone = action.payload;
     },
+    homeLayoutToggled(state) {
+      state.homeLayout = state.homeLayout === "apart" ? "center" : "apart";
+    },
   },
 });
 
-export const { visionZoneChanged } = settingsSlice.actions;
+export const { visionZoneChanged, homeLayoutToggled } = settingsSlice.actions;
 export default settingsSlice.reducer;

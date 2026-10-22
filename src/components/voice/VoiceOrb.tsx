@@ -2,9 +2,9 @@ import classNames from "classnames";
 import type { OrbState } from "@/types/voice";
 
 const LABELS: Record<OrbState, string> = {
-  listen: "Ava is listening",
-  think: "Ava is thinking",
-  speak: "Ava is speaking",
+  listen: "Ola is listening",
+  think: "Ola is thinking",
+  speak: "Ola is speaking",
 };
 
 const CYCLES: Record<OrbState, string> = {

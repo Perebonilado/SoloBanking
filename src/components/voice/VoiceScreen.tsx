@@ -1,41 +1,71 @@
 import {
   useConversationControls,
   useConversationMode,
-  useConversationStatus,
 } from "@elevenlabs/react";
 import type { MouseEvent } from "react";
-import { useFingerprintTool } from "@/hooks/useFingerprintTool";
 import { useMultiTap } from "@/hooks/useMultiTap";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
+import { useVoiceTools } from "@/hooks/useVoiceTools";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { voiceReset } from "@/store/slices/voiceSlice";
-import type { OrbState } from "@/types/voice";
+import { signOut } from "@/store/signOut";
+import { receiptClosed } from "@/store/slices/receiptSlice";
+import { homeLayoutToggled } from "@/store/slices/settingsSlice";
+import { connectionChanged, voiceReset } from "@/store/slices/voiceSlice";
+import type { ConnectionStatus, OrbState } from "@/types/voice";
 import CallView from "./CallView";
+import HomeView from "./HomeView";
 import HungUpView from "./HungUpView";
+import ReceiptView from "./ReceiptView";
 import VerificationSheet from "./VerificationSheet";
+
+function toConnection(status: string): ConnectionStatus {
+  return status === "connected" || status === "connecting"
+    ? status
+    : "disconnected";
+}
 
 export default function VoiceScreen() {
   const dispatch = useAppDispatch();
   const customer = useAppSelector((state) => state.customer.saved);
-  const { display, verification } = useAppSelector((state) => state.voice);
-  const zone = useAppSelector((state) => state.settings.visionZone);
+  const { connection, display, verification } = useAppSelector(
+    (state) => state.voice,
+  );
+  const receipt = useAppSelector((state) =>
+    state.receipt.open ? state.receipt.last : null,
+  );
+  const signedIn = useAppSelector((state) => state.session.accessToken !== null);
+  const { visionZone: zone, homeLayout } = useAppSelector(
+    (state) => state.settings,
+  );
   const reduceMotion = usePrefersReducedMotion();
   const { startSession, endSession } = useConversationControls();
-  const { status } = useConversationStatus();
   const { mode } = useConversationMode();
-  const { confirmFingerprint, cancelFingerprint } = useFingerprintTool();
+  const { confirmFingerprint, cancelFingerprint } = useVoiceTools();
 
-  const inConversation = status === "connecting" || status === "connected";
+  const inConversation = connection !== "disconnected";
   const orb: OrbState =
-    status === "connecting" ? "think" : mode === "speaking" ? "speak" : "listen";
+    connection === "connecting"
+      ? "think"
+      : mode === "speaking"
+        ? "speak"
+        : "listen";
 
   const handleDisconnect = () => {
     cancelFingerprint();
     dispatch(voiceReset());
+    void dispatch(signOut());
   };
 
   const registerTap = useMultiTap((taps) => {
-    if (status === "disconnected" && taps >= 2) {
+    if (receipt) {
+      if (taps >= 3 && !verification) {
+        if (inConversation) endSession();
+        dispatch(receiptClosed());
+      }
+      return;
+    }
+    if (connection === "disconnected" && taps >= 2) {
+      dispatch(connectionChanged("connecting"));
       startSession({
         dynamicVariables: {
           has_saved_account: customer !== null,
@@ -43,9 +73,11 @@ export default function VoiceScreen() {
           account_number: customer?.accountNumber ?? "",
           fingerprint_verified: false,
           greeting: customer
-            ? `Hi ${customer.name.trim().split(/\s+/)[0]}, it's Ava.`
-            : "Hi, I'm Ava.",
+            ? `Hi ${customer.name.trim().split(/\s+/)[0]}, it's Ola.`
+            : "Hi, I'm Ola.",
         },
+        onStatusChange: ({ status }) =>
+          dispatch(connectionChanged(toConnection(status))),
         onDisconnect: handleDisconnect,
       });
     } else if (inConversation && !verification && taps >= 3) {
@@ -66,25 +98,37 @@ export default function VoiceScreen() {
       onClick={handleClick}
       className="relative h-dvh w-full touch-manipulation overflow-hidden bg-black text-[length:min(1rem,32px)] leading-[normal] text-white select-none"
     >
-      {inConversation ? (
-        <>
-          <CallView
-            orb={orb}
-            display={display}
-            zone={zone}
-            reduceMotion={reduceMotion}
-            inert={Boolean(verification)}
-          />
-          {verification && (
-            <VerificationSheet
-              prompt={verification}
-              zone={zone}
-              reduceMotion={reduceMotion}
-            />
-          )}
-        </>
+      {receipt ? (
+        <ReceiptView
+          receipt={receipt}
+          zone={zone}
+          orb={inConversation ? orb : null}
+          reduceMotion={reduceMotion}
+          inert={Boolean(verification)}
+        />
+      ) : inConversation && signedIn ? (
+        <HomeView
+          layout={homeLayout}
+          onToggleLayout={() => dispatch(homeLayoutToggled())}
+          inert={Boolean(verification)}
+        />
+      ) : inConversation ? (
+        <CallView
+          orb={orb}
+          display={display}
+          zone={zone}
+          reduceMotion={reduceMotion}
+          inert={Boolean(verification)}
+        />
       ) : (
         <HungUpView zone={zone} />
+      )}
+      {inConversation && verification && (
+        <VerificationSheet
+          prompt={verification}
+          zone={zone}
+          reduceMotion={reduceMotion}
+        />
       )}
     </main>
   );

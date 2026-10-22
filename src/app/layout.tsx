@@ -1,13 +1,12 @@
 import classNames from "classnames";
 import type { Metadata, Viewport } from "next";
-import { Atkinson_Hyperlegible } from "next/font/google";
+import { Atkinson_Hyperlegible_Next } from "next/font/google";
 import { ICON_FONT_URL } from "@/components/ui/Icon";
 import StoreProvider from "@/store/StoreProvider";
 import "./globals.css";
 
-const atkinson = Atkinson_Hyperlegible({
+const atkinson = Atkinson_Hyperlegible_Next({
   variable: "--font-atkinson",
-  weight: ["400", "700"],
   subsets: ["latin"],
 });
 

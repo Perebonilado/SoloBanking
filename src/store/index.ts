@@ -2,11 +2,15 @@ import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import { setupListeners } from "@reduxjs/toolkit/query";
 import { baseApi } from "@/services/baseApi";
 import customerReducer from "./slices/customerSlice";
+import receiptReducer from "./slices/receiptSlice";
+import sessionReducer from "./slices/sessionSlice";
 import settingsReducer from "./slices/settingsSlice";
 import voiceReducer from "./slices/voiceSlice";
 
 const rootReducer = combineReducers({
   customer: customerReducer,
+  receipt: receiptReducer,
+  session: sessionReducer,
   settings: settingsReducer,
   voice: voiceReducer,
   [baseApi.reducerPath]: baseApi.reducer,
